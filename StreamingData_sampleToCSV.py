@@ -61,6 +61,6 @@ staticDF = spark.read.csv('C:\Users\mnikiforov\Documents\GitHub\ST590_Analysis_o
 
 df = spark.readStream.schema(
     StructType().add('adId', "integer").add('clickTime', 'timestamp')
-).csv("C:\Users\mnikiforov\Documents\GitHub\ST590_Analysis_of_Big_Data\csvfiles")
+).csv(r"C:\Users\mnikiforov\Documents\GitHub\ST590_Analysis_of_Big_Data\csvfiles")
 
 joinquery = staticDF.join(df, "adId", "inner").writeStream.outputMode("append").format("console").start()
