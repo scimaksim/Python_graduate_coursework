@@ -136,3 +136,40 @@ for i in range(0, len(PC6771_data), 500):
     + str(i) + ".csv", index = False, header = False)
 # The loop should then delay for 10 seconds after writing to the files.
 time.sleep(10)
+
+##### Reading a stream #####
+from pyspark.sql.types import StructType
+
+# Setup the schema (read all in as strings) for SA0297
+SA0297_schema = StructType() \
+                  .add("time", "string") \
+                  .add("pid", "string") \
+                  .add("x", "string") \
+                  .add("y", "string") \
+                  .add("z", "string")
+
+# Setup the schema (read all in as strings) for PC6771
+PC6771_schema = StructType() \
+                  .add("time", "string") \
+                  .add("pid", "string") \
+                  .add("x", "string") \
+                  .add("y", "string") \
+                  .add("z", "string")
+
+
+# Create an input stream from the csv folder for SA0297
+SA0297_df = spark.readStream.schema(SA0297_schema).csv(r"C:\Users\mnikiforov\Documents\GitHub\ST590_Analysis_of_Big_Data\HW7\SA0297_data")
+
+# Create an input stream from the csv folder for PC6771
+PC6771_df = spark.readStream.schema(PC6771_schema).csv(r"C:\Users\mnikiforov\Documents\GitHub\ST590_Analysis_of_Big_Data\HW7\PC6771_data")
+
+##### Transform/aggregation step #####
+from pyspark.sql.functions import cast, sqrt
+
+transform_SA0297 = SA0297_df.select(sqrt(cast("x" as double)+cast("y" as double)+cast("z" as double)).alias("mag"))
+
+transform_PC6771 = PC6771_df.select(sqrt(cast("x" as double)+cast("y" as double)+cast("z" as double)).alias("mag"))
+
+
+##### Writing the stream #####
+myquery = agg.writeStream.outputMode("complete").format("console").start()
