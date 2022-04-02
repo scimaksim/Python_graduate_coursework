@@ -87,11 +87,9 @@ spark.sql("SELECT * FROM myquery_sliding") \
         .option("header", "false") \
         .save(r"C:\Users\mnikiforov\Documents\GitHub\ST590_Analysis_of_Big_Data\HW7\myquery_sliding_results")
 
-####################################
-############# Task 3 ###############
-####################################
-
-##### Setup for creating files #####
+#######################################################################################
+####################################### Task 3 ########################################
+#######################################################################################
 
 # Import required libraries for importing data (pandas),
 # invoking 10-second delay after writing to files (time),
@@ -100,48 +98,38 @@ import pandas as ps
 import time
 import os
 
-# Read in the all_accelerometer_data_pids_13.csv file (relative directory)
+# Read in the all_accelerometer_data_pids_13.csv file (directory is relative)
 accelerometer_data = ps.read_csv('HW7/all_accelerometer_data_pids_13.csv')
 
-# Create two data frames, one for person SA0297’s data and one for person PC6771’s data.
-SA0297_data = accelerometer_data[accelerometer_data.pid == "SA0297"]
-PC6771_data = accelerometer_data[accelerometer_data.pid == "PC6771"]
+# Filter to create two data frames, 
+# one for person SA0297’s data and one for person PC6771’s data.
+SA0297_df = accelerometer_data[accelerometer_data.pid == "SA0297"]
+PC6771_df = accelerometer_data[accelerometer_data.pid == "PC6771"]
 
-# Create new directories to store .CSV files
-os.makedirs('HW7/SA0297_data', exist_ok=True)
-os.makedirs('HW7/PC6771_data', exist_ok=True)
+# Assign custom "name" attributes to our data frames, reference them
+# to create new directories in the subsequent "for" loop
+SA0297_df.name = "SA0297_df"
+PC6771_df.name = "PC6771_df"
 
-# Set up a for loop to write 500 values at a time for
-# SA0297 to a .csv file in a folder for that person’s data.
-# Begin loop at first row, stop when we reach the end of our CSV file,
-# increment by 500 for slicing purposes
-for i in range(0, len(SA0297_data), 500):
-    # Starting index for slicing using .iloc[]
-    start_index = i
-    # End index (increment of 500)
-    end_index = i + 500
-    # Slice 500 rows at a time, sequentially
-    temp = SA0297_data.iloc[start_index:end_index]
-    # Write to a .CSV file (uniquely named) within the new directory
-    temp.to_csv("HW7/SA0297_data/SA0297_" \
-    + str(i) + ".csv", index = False, header = False)
-    
-# The loop should then delay for 10 seconds after writing to the files.
-time.sleep(10)
+# Set up a for loop to write 500 values at a time to .CSV files for PID
+# SA0297 and PC6771.
+for df_name in [SA0297_df, PC6771_df]:
+    # Since .to_csv() does not create directories for us,
+    # manually create new directories to store .CSV files.
+    # Reference the custom ".name" attribute we created earlier
+    os.makedirs('HW7/' + df_name.name + "_sliced", exist_ok=True)
+    # Begin loop at first row, increment by 500 for slicing,
+    # stop when we reach the last record for each PID
+    for i in range(0, len(df_name), 500):
+        # Starting index for slicing using .iloc[]
+        start_index = i
+        # End index (increment of 500)
+        end_index = i + 500
+        # Slice 500 rows at a time, sequentially
+        temp = df_name.iloc[start_index:end_index]
+        # Write to a .CSV file (uniquely named) within the new directory
+        temp.to_csv("HW7/" + df_name.name + "_sliced/" + df_name.name + "_" + str(i) + ".csv", index = False, header = False)
 
-#  Similarly output values for PC6771 to another folder.
-# Begin loop at first row, stop when we reach the end of our CSV file,
-# increment by 500 for slicing purposes
-for i in range(0, len(PC6771_data), 500):
-    # Starting index for slicing using .iloc[]
-    start_index = i
-    # End index (increment of 500)
-    end_index = i + 500
-    # Slice 500 rows at a time, sequentially
-    temp = PC6771_data.iloc[start_index:end_index]
-    # Write to a .CSV file (uniquely named)
-    temp.to_csv("HW7/PC6771_data/PC6771_" \
-    + str(i) + ".csv", index = False, header = False)
 # The loop should then delay for 10 seconds after writing to the files.
 time.sleep(10)
 
