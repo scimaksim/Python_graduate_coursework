@@ -93,18 +93,25 @@ spark.sql("SELECT * FROM myquery_sliding") \
 
 ##### Setup for creating files #####
 
+# Import required libraries for importing data (pandas),
+# invoking 10-second delay after writing to files (time),
+# and creating directories when they do not yet exist (os)
 import pandas as ps
 import time
+import os
 
-# Read in the all_accelerometer_data_pids_13.csv file
-accelerometer_data = ps.read_csv(r'C:\Users\mnikiforov\Documents\GitHub\ST590_Analysis_of_Big_Data\HW7\all_accelerometer_data_pids_13.csv')
+# Read in the all_accelerometer_data_pids_13.csv file (relative directory)
+accelerometer_data = ps.read_csv('HW7/all_accelerometer_data_pids_13.csv')
 
 # Create two data frames, one for person SA0297’s data and one for person PC6771’s data.
 SA0297_data = accelerometer_data[accelerometer_data.pid == "SA0297"]
 PC6771_data = accelerometer_data[accelerometer_data.pid == "PC6771"]
 
+# Create new directories to store .CSV files
+os.makedirs('HW7/SA0297_data', exist_ok=True)
+os.makedirs('HW7/PC6771_data', exist_ok=True)
 
-# Set up a for loop to write 500 values at a time (not randomly, from first line) for 
+# Set up a for loop to write 500 values at a time for
 # SA0297 to a .csv file in a folder for that person’s data.
 # Begin loop at first row, stop when we reach the end of our CSV file,
 # increment by 500 for slicing purposes
@@ -114,10 +121,11 @@ for i in range(0, len(SA0297_data), 500):
     # End index (increment of 500)
     end_index = i + 500
     # Slice 500 rows at a time, sequentially
-    temp = file_name.iloc[start_index:end_index]
-    # Write to a .CSV file (uniquely named)
-    temp.to_csv("SA0297_data/SA0297_" \
+    temp = SA0297_data.iloc[start_index:end_index]
+    # Write to a .CSV file (uniquely named) within the new directory
+    temp.to_csv("HW7/SA0297_data/SA0297_" \
     + str(i) + ".csv", index = False, header = False)
+    
 # The loop should then delay for 10 seconds after writing to the files.
 time.sleep(10)
 
@@ -132,7 +140,7 @@ for i in range(0, len(PC6771_data), 500):
     # Slice 500 rows at a time, sequentially
     temp = PC6771_data.iloc[start_index:end_index]
     # Write to a .CSV file (uniquely named)
-    temp.to_csv("PC6771_data/PC6771_" \
+    temp.to_csv("HW7/PC6771_data/PC6771_" \
     + str(i) + ".csv", index = False, header = False)
 # The loop should then delay for 10 seconds after writing to the files.
 time.sleep(10)
@@ -158,18 +166,65 @@ PC6771_schema = StructType() \
 
 
 # Create an input stream from the csv folder for SA0297
-SA0297_df = spark.readStream.schema(SA0297_schema).csv(r"C:\Users\mnikiforov\Documents\GitHub\ST590_Analysis_of_Big_Data\HW7\SA0297_data")
+SA0297_df = spark.readStream.schema(SA0297_schema).csv("HW7/SA0297_data")
 
 # Create an input stream from the csv folder for PC6771
-PC6771_df = spark.readStream.schema(PC6771_schema).csv(r"C:\Users\mnikiforov\Documents\GitHub\ST590_Analysis_of_Big_Data\HW7\PC6771_data")
+PC6771_df = spark.readStream.schema(PC6771_schema).csv("HW7/PC6771_data")
 
 ##### Transform/aggregation step #####
-from pyspark.sql.functions import cast, sqrt
+# Import functions to find square root 
+from pyspark.sql.functions import col, sqrt
 
-transform_SA0297 = SA0297_df.select(sqrt(cast("x" as double)+cast("y" as double)+cast("z" as double)).alias("mag"))
+transform_SA0297 = SA0297_df \
+                      .select("time", "pid", col("x").cast("double"), col("y").cast("double"), col("z").cast("double")) \
+                      .select("time", "pid", sqrt(col("x")**2 + col("y")**2 + col("z")**2) \
+                      .alias("mag"))
 
-transform_PC6771 = PC6771_df.select(sqrt(cast("x" as double)+cast("y" as double)+cast("z" as double)).alias("mag"))
+transform_PC6771 = PC6771_df \
+                      .select("time", "pid", col("x").cast("double"), col("y").cast("double"), col("z").cast("double")) \
+                      .select("time", "pid", sqrt(col("x")**2 + col("y")**2 + col("z")**2) \
+                      .alias("mag"))
 
 
 ##### Writing the stream #####
-myquery = agg.writeStream.outputMode("complete").format("console").start()
+
+# Create new directories to store .CSV files
+os.makedirs('HW7/SA0297_write', exist_ok=True)
+os.makedirs('HW7/PC6771_write', exist_ok=True)
+
+# Write the files
+SA0297_stream = transform_SA0297 \
+                   .writeStream.outputMode("append") \
+                   .format("csv") \
+                   .option("path", "HW7/SA0297_write") \
+                   .option("checkpointlocation", "HW7/SA0297_write") \
+                   .start()
+
+PC6771_stream = transform_PC6771 \
+                   .writeStream.outputMode("append") \
+                   .format("csv") \
+                   .option("path", "HW7/PC6771_write") \
+                   .option("checkpointlocation", "HW7/PC6771_write") \
+                   .start()
+
+
+# Use PySpark to read in all "part" files
+allfiles = spark.read.option("header","false").csv("HW7/SA0297_write/part-*.csv")
+
+# Output as CSV file
+allfiles \
+.coalesce(1) \
+.write.format("csv") \
+.option("header", "false") \
+.save("HW7/SA0297_write/single_csv_file")
+
+
+# Use PySpark to read in all "part" files
+allfiles = spark.read.option("header","false").csv("HW7/PC6771_write/part-*.csv")
+
+# Output as CSV file
+allfiles \
+.coalesce(1) \
+.write.format("csv") \
+.option("header", "false") \
+.save("HW7/PC6771_write/single_csv_file")
