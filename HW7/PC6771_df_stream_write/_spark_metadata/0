@@ -1,0 +1,4 @@
+v1
+{"path":"file:///C:/Users/mnikiforov/Documents/GitHub/ST590_Analysis_of_Big_Data/HW7/PC6771_df_stream_write/part-00000-d3c3c5f5-c907-46a8-8e55-f2e2c8ae2af6-c000.csv","size":22333,"isDir":false,"modificationTime":1648930826774,"blockReplication":1,"blockSize":33554432,"action":"add"}
+{"path":"file:///C:/Users/mnikiforov/Documents/GitHub/ST590_Analysis_of_Big_Data/HW7/PC6771_df_stream_write/part-00001-024bc7c8-57ca-489f-97ec-4ac04f63e035-c000.csv","size":22394,"isDir":false,"modificationTime":1648930826774,"blockReplication":1,"blockSize":33554432,"action":"add"}
+{"path":"file:///C:/Users/mnikiforov/Documents/GitHub/ST590_Analysis_of_Big_Data/HW7/PC6771_df_stream_write/part-00002-a3ae8928-4573-400a-86d6-85c3c8642440-c000.csv","size":22267,"isDir":false,"modificationTime":1648930826790,"blockReplication":1,"blockSize":33554432,"action":"add"}
